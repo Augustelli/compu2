@@ -1,0 +1,2 @@
+[console_scripts]
+mif = multithreaded_image_filter:main
