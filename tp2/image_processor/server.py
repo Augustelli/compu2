@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 from aiohttp import web
 import argparse
-from .utils import convert_to_grayscale
+from utils import convert_to_grayscale
 
 async def handle_image(request):
     reader = await request.multipart()

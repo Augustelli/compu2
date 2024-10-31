@@ -13,9 +13,9 @@ async def send_to_server_b(image_data):
     reader, writer = await asyncio.open_connection('localhost', 8888)
     writer.write(image_data)
     await writer.drain()
-    
+
     resized_image_data = await reader.read()
     writer.close()
     await writer.wait_closed()
-    
+
     return resized_image_data
