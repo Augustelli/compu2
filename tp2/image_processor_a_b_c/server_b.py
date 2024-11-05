@@ -1,9 +1,17 @@
+# file: image_processor_a_b_c/server_b.py
 import socketserver
 from PIL import Image
 import io
+import argparse
+import multiprocessing
+import logging
+import threading
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 
 class ImageResizerHandler(socketserver.BaseRequestHandler):
     def handle(self):
+        logging.info("Handling image resize request")
         data = b''
         while True:
             packet = self.request.recv(1024*1024)
@@ -12,6 +20,7 @@ class ImageResizerHandler(socketserver.BaseRequestHandler):
             data += packet
 
         try:
+            logging.info("Resizing image")
             image = Image.open(io.BytesIO(data))
             scale_factor = 0.5
             new_size = (int(image.width * scale_factor), int(image.height * scale_factor))
@@ -20,17 +29,16 @@ class ImageResizerHandler(socketserver.BaseRequestHandler):
             output = io.BytesIO()
             resized_image.save(output, format='PNG')
             self.request.sendall(output.getvalue())
+            logging.info("Image resized and sent back to client")
         except Exception as e:
-            print(f"Error processing image: {e}")
+            logging.error(f"Error processing image: {e}")
 
 if __name__ == "__main__":
-    import argparse
-    import multiprocessing
-
     parser = argparse.ArgumentParser(description='Image Resizer Server')
     parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to run the server on')
     parser.add_argument('--port', type=int, default=8888, help='Port to run the server on')
     args = parser.parse_args()
 
+    logging.info("Starting image resizer server")
     with socketserver.TCPServer((args.host, args.port), ImageResizerHandler) as server:
         server.serve_forever()
