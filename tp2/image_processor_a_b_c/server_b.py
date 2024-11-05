@@ -1,11 +1,9 @@
-# file: image_processor_a_b_c/server_b.py
 import socketserver
 from PIL import Image
 import io
 import argparse
-import multiprocessing
+import socket
 import logging
-import threading
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 
@@ -35,10 +33,14 @@ class ImageResizerHandler(socketserver.BaseRequestHandler):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Image Resizer Server')
-    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to run the server on')
+    parser.add_argument('--host', type=str, default='::', help='Host to run the server on')
     parser.add_argument('--port', type=int, default=8888, help='Port to run the server on')
     args = parser.parse_args()
 
     logging.info("Starting image resizer server")
-    with socketserver.TCPServer((args.host, args.port), ImageResizerHandler) as server:
+    with socketserver.TCPServer((args.host, args.port), ImageResizerHandler, bind_and_activate=False) as server:
+        server.address_family = socket.AF_INET6 if socket.has_ipv6 else socket.AF_INET
+
+        server.server_bind()
+        server.server_activate()
         server.serve_forever()

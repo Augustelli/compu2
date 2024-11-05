@@ -1,4 +1,3 @@
-# file: image_processor_a_b_c/server.py
 import asyncio
 import aiohttp
 from aiohttp import web
@@ -22,7 +21,7 @@ async def convert_to_grayscale(image_data):
 
 async def resize_image(image_data, scale_factor):
     logging.info("Connecting to image resizer server")
-    reader, writer = await asyncio.open_connection('127.0.0.1', 8888)
+    reader, writer = await asyncio.open_connection('::1', 8888, family=socket.AF_INET6)
     writer.write(image_data)
     await writer.drain()
     writer.write_eof()
@@ -54,7 +53,7 @@ async def init_app():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Image Processor Server')
-    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to run the server on')
+    parser.add_argument('--host', type=str, default='::', help='Host to run the server on')
     parser.add_argument('--port', type=int, default=8080, help='Port to run the server on')
     args = parser.parse_args()
 
