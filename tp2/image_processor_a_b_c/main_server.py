@@ -3,7 +3,7 @@ import socket
 import io
 import argparse
 import logging
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -16,11 +16,18 @@ class ImageProcessorServer:
 
     async def handle_client(self, reader, writer):
         data = await reader.read()
+        if not data:
+            logging.error("No se recibió ningún dato del cliente")
+            return
         logging.info("Imagen recibida del cliente")
 
-        # Convertir a escala de grises
-        image = Image.open(io.BytesIO(data))
-        grayscale_image = image.convert("L")
+        try:
+            # Convertir a escala de grises
+            image = Image.open(io.BytesIO(data))
+            grayscale_image = image.convert("L")
+        except UnidentifiedImageError:
+            logging.error("No se pudo identificar el archivo de imagen")
+            return
 
         # Enviar la imagen escalada al segundo servidor
         scaled_image = await self.send_to_scaling_server(grayscale_image)
@@ -58,10 +65,10 @@ class ImageProcessorServer:
 
 def main():
     parser = argparse.ArgumentParser(description="Servidor HTTP de procesamiento de imágenes")
-    parser.add_argument('-i', '--ip', required=True, help="Dirección de escucha")
-    parser.add_argument('-p', '--port', required=True, type=int, help="Puerto de escucha")
-    parser.add_argument('--scale-ip', required=True, help="IP del servidor de escalado")
-    parser.add_argument('--scale-port', required=True, type=int, help="Puerto del servidor de escalado")
+    parser.add_argument('-i', '--ip', required=False, help="Dirección de escucha", default='0.0.0.0')
+    parser.add_argument('-p', '--port', required=False, type=int, help="Puerto de escucha", default=8080)
+    parser.add_argument('--scale-ip', required=False, help="IP del servidor de escalado", default='127.0.0.1')
+    parser.add_argument('--scale-port', required=False, type=int, help="Puerto del servidor de escalado", default=8081)
     args = parser.parse_args()
 
     image_server = ImageProcessorServer(args.ip, args.port, args.scale_ip, args.scale_port)

@@ -1,16 +1,15 @@
 import asyncio
-import aiohttp
 from aiohttp import web
 import argparse
 import io
 from PIL import Image
 import socket
 import logging
-import threading
+from concurrent.futures import ProcessPoolExecutor
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 
-async def convert_to_grayscale(image_data):
+def convert_to_grayscale(image_data):
     logging.info("Converting image to grayscale")
     image = Image.open(io.BytesIO(image_data)).convert('L')
     output = io.BytesIO()
@@ -21,7 +20,7 @@ async def convert_to_grayscale(image_data):
 
 async def resize_image(image_data, scale_factor):
     logging.info("Connecting to image resizer server")
-    reader, writer = await asyncio.open_connection('::1', 8888, family=socket.AF_INET6)
+    reader, writer = await asyncio.open_connection('127.0.0.1', 8888, family=socket.AF_INET)
     writer.write(image_data)
     await writer.drain()
     writer.write_eof()
@@ -40,8 +39,10 @@ async def handle_upload(request):
     assert field.name == 'image'
     image_data = await field.read(decode=True)
 
-    grayscale_image = await convert_to_grayscale(image_data)
-    resized_image = await resize_image(grayscale_image, 0.5)
+    with ProcessPoolExecutor() as executor:
+        loop = asyncio.get_event_loop()
+        grayscale_image = await loop.run_in_executor(executor, convert_to_grayscale, image_data)
+        resized_image = await resize_image(grayscale_image, 0.5)
 
     logging.info("Sending processed image to client")
     return web.Response(body=resized_image, content_type='image/png')
@@ -53,7 +54,7 @@ async def init_app():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Image Processor Server')
-    parser.add_argument('--host', type=str, default='0.0.0.0', help='Host to run the server on')
+    parser.add_argument('--host', type=str, default='::', help='Host to run the server on')
     parser.add_argument('--port', type=int, default=8080, help='Port to run the server on')
     args = parser.parse_args()
 

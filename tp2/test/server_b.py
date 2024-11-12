@@ -40,7 +40,7 @@ class ImageResizerHandler(socketserver.BaseRequestHandler):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Image Resizer Server')
-    parser.add_argument('--host', type=str, default='::', help='Host to run the server on')
+    parser.add_argument('--host', type=str, default='127.0.0.1', help='Host to run the server on')
     parser.add_argument('--port', type=int, default=8888, help='Port to run the server on')
     args = parser.parse_args()
 
